@@ -1,0 +1,24 @@
+# Core dependencies
+streamlit>=1.28.0
+librosa>=0.10.0
+matplotlib>=3.5.0
+plotly>=5.0.0
+soundfile>=0.10.0
+numpy>=1.21.0
+scipy>=1.7.0
+pretty_midi>=0.1.11
+
+# Audio separation (install separately to avoid conflicts)
+# pip install spleeter>=2.4.0  # Fast separation
+# pip install demucs>=4.0.0   # High quality separation
+
+# Melody extraction
+crepe>=0.0.12
+# basic-pitch>=1.0.0  # Alternative to CREPE
+
+# Optional: For better chord analysis and downbeat detection
+# essentia>=2.1.0
+# madmom>=0.16.0
+
+# Development and packaging
+# pyinstaller>=5.0.0  # For creating standalone executable
