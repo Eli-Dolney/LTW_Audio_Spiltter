@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strudel Debug Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1a1a1a;
+            color: #ffffff;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .test-box {
+            background-color: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #4CAF50;
+        }
+        .error-box {
+            border-left-color: #f44336;
+            background-color: #3a2a2a;
+        }
+        .success-box {
+            border-left-color: #4CAF50;
+            background-color: #2a3a2a;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .code {
+            background-color: #1a1a1a;
+            padding: 10px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            border: 1px solid #444;
+            margin: 10px 0;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .status.error {
+            background-color: #f44336;
+            color: white;
+        }
+        .status.success {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .status.info {
+            background-color: #2196F3;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Strudel Debug Test</h1>
+        
+        <div class="test-box">
+            <h3>🎵 Audio Test</h3>
+            <p>First, let's test if your browser can play audio:</p>
+            <button onclick="testAudio()">🔊 Test Audio</button>
+            <div id="audio-status" class="status info">Click the button to test audio</div>
+        </div>
+        
+        <div class="test-box">
+            <h3>🌐 Browser Test</h3>
+            <p>Let's check your browser compatibility:</p>
+            <div id="browser-info" class="code"></div>
+        </div>
+        
+        <div class="test-box">
+            <h3>🎯 Simple Strudel Test</h3>
+            <p>Try this ultra-simple pattern:</p>
+            <div class="code">d1 $ "bd"</div>
+            <p><strong>Instructions:</strong></p>
+            <ol>
+                <li>Go to <a href="https://strudel.cc" target="_blank" style="color: #4CAF50;">strudel.cc</a></li>
+                <li>Clear the editor (select all and delete)</li>
+                <li>Type exactly: <code>d1 $ "bd"</code></li>
+                <li>Press <strong>Ctrl+Enter</strong></li>
+            </ol>
+            <div id="strudel-status" class="status info">Try the pattern above and let me know what happens</div>
+        </div>
+        
+        <div class="test-box">
+            <h3>🔍 Alternative Test</h3>
+            <p>If the above doesn't work, try this even simpler version:</p>
+            <div class="code">d1 $ bd</div>
+            <p>Or try:</p>
+            <div class="code">d1 $ "bd"</div>
+            <p>Or try:</p>
+            <div class="code">d1 $ s("bd")</div>
+        </div>
+        
+        <div class="test-box">
+            <h3>📱 Mobile/Tablet Test</h3>
+            <p>If you're on mobile, try:</p>
+            <div class="code">d1 $ "bd"</div>
+            <p>Then tap the play button instead of using Ctrl+Enter</p>
+        </div>
+        
+        <div class="test-box">
+            <h3>🔄 Browser Alternatives</h3>
+            <p>If Chrome doesn't work, try:</p>
+            <ul>
+                <li><strong>Firefox</strong> - Often works better with audio</li>
+                <li><strong>Safari</strong> - Good for Mac users</li>
+                <li><strong>Edge</strong> - Alternative to Chrome</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Test audio capability
+        function testAudio() {
+            const status = document.getElementById('audio-status');
+            
+            try {
+                // Create audio context
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                if (audioContext.state === 'suspended') {
+                    status.innerHTML = '⚠️ Audio context suspended. Click to resume.';
+                    status.className = 'status error';
+                    audioContext.resume().then(() => {
+                        status.innerHTML = '✅ Audio context resumed successfully!';
+                        status.className = 'status success';
+                    });
+                } else {
+                    status.innerHTML = '✅ Audio context is working!';
+                    status.className = 'status success';
+                }
+            } catch (error) {
+                status.innerHTML = '❌ Audio not supported: ' + error.message;
+                status.className = 'status error';
+            }
+        }
+        
+        // Check browser info
+        function checkBrowser() {
+            const info = document.getElementById('browser-info');
+            const userAgent = navigator.userAgent;
+            const isChrome = userAgent.includes('Chrome');
+            const isFirefox = userAgent.includes('Firefox');
+            const isSafari = userAgent.includes('Safari') && !userAgent.includes('Chrome');
+            const isEdge = userAgent.includes('Edge');
+            
+            let browser = 'Unknown';
+            if (isChrome) browser = 'Chrome';
+            else if (isFirefox) browser = 'Firefox';
+            else if (isSafari) browser = 'Safari';
+            else if (isEdge) browser = 'Edge';
+            
+            info.innerHTML = `Browser: ${browser}
+User Agent: ${userAgent}
+Audio Context: ${window.AudioContext ? 'Supported' : 'Not Supported'}
+Web Audio API: ${window.AudioContext || window.webkitAudioContext ? 'Available' : 'Not Available'}`;
+        }
+        
+        // Run browser check on load
+        window.addEventListener('load', checkBrowser);
+    </script>
+</body>
+</html>

@@ -36,6 +36,13 @@ LTW Audio Splitter is a powerful, privacy-focused audio analysis tool that runs 
 - **Template Matching**: Major/minor chord recognition
 - **Export Options**: Text and JSON chord charts
 
+### 🎵 Strudel Live Coding
+- **Pattern Generation**: Convert audio analysis to Strudel code
+- **Style Templates**: Pre-built patterns for different musical genres
+- **Live Coding**: Generate beats, melodies, and chord progressions
+- **Web Player**: Download HTML files to play patterns in browser
+- **Template Browser**: Browse and use style-specific templates
+
 ### 📤 Export & Integration
 - **DAW Support**: Export for Ableton Live, Logic Pro, FL Studio
 - **Multiple Formats**: WAV, MIDI, JSON, TXT, ZIP packages
@@ -188,7 +195,13 @@ setup.bat
 - View chord changes over time
 - Export chord charts
 
-### Step 7: Export Results
+### Step 7: Generate Strudel Patterns
+- Click "Generate Strudel Patterns" in the Strudel tab
+- Browse style templates (Hip-Hop, Electronic, Rock, Jazz, etc.)
+- Copy generated code to strudel.cc for live coding
+- Download HTML player for offline use
+
+### Step 8: Export Results
 - Download individual files (stems, MIDI, reports)
 - Export DAW-specific project files
 - Create complete package with all results
@@ -251,18 +264,67 @@ LTW_Audio_Spiltter/
 - **Sample Creation**: Extract clean samples from full tracks
 - **Reference Analysis**: Study arrangement and production techniques
 - **Backing Tracks**: Create karaoke-style backing tracks
+- **Live Coding**: Generate Strudel patterns for live performance
 
 ### Music Education
 - **Ear Training**: Analyze chord progressions and melodies
 - **Rhythm Study**: Study drum patterns and timing
 - **Composition**: Learn from existing songs
 - **Transcription**: Convert audio to MIDI for notation
+- **Live Coding**: Learn algorithmic composition with Strudel
 
 ### Research & Analysis
 - **Musicology**: Analyze musical patterns and structures
 - **Audio Processing**: Study audio characteristics
 - **Machine Learning**: Prepare training data for ML models
 - **Audio Forensics**: Analyze audio content and quality
+
+## 🎵 Strudel Live Coding Integration
+
+### What is Strudel?
+Strudel is a web-based live coding environment inspired by TidalCycles. It allows you to create music patterns using code, perfect for algorithmic composition and live performance.
+
+### How It Works in LTW Audio Splitter
+1. **Analyze your audio** using the Analysis tab
+2. **Generate Strudel patterns** from your analysis data
+3. **Browse style templates** for different musical genres
+4. **Copy code to strudel.cc** for live coding
+5. **Download HTML player** for offline use
+
+### Available Musical Styles
+- **Hip-Hop**: Basic, Trap, Boom Bap, Drill
+- **Electronic**: House, Techno, Dubstep, Ambient Techno
+- **Rock**: Basic Rock, Punk, Metal, Alternative
+- **Jazz**: Swing, Bebop, Fusion, Latin Jazz
+- **Ambient**: Minimal, Atmospheric, Drone, Textural
+- **Reggae**: One Drop, Rockers, Steppers, Dub
+- **Funk**: Basic Funk, James Brown, P-Funk, Modern Funk
+- **Minimal**: Basic Minimal, Microhouse, Minimal Techno, Ambient Minimal
+
+### Getting Started with Strudel
+1. Go to [strudel.cc](https://strudel.cc) in your browser
+2. Copy generated code from LTW Audio Splitter
+3. Paste into the Strudel editor
+4. Press **Ctrl+Enter** to play
+5. Edit the code to modify patterns
+
+### Basic Strudel Commands
+```javascript
+// Play a drum pattern
+d1 $ "bd sn bd sn"
+
+// Play a melody
+d2 $ n "c4 d4 e4 f4" # s "piano"
+
+// Play chord progression
+d3 $ chord "C Am F G" # s "pad"
+
+// Stop all sounds
+hush
+
+// Set tempo
+setcpm 480  // 120 BPM
+```
 
 ## 🔧 Configuration
 

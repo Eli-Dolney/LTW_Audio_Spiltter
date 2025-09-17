@@ -36,6 +36,9 @@ from src.export import (
     export_project_summary, export_analysis_report,
     create_export_package, export_daw_project
 )
+from src.strudel_integration import (
+    StrudelPatternGenerator, generate_strudel_from_analysis
+)
 
 
 # Page configuration
@@ -554,6 +557,255 @@ def chord_analysis_section():
                 st.write(f"{i+1:2d}. {time:6.2f}s - {chord}")
 
 
+def strudel_section():
+    """Strudel live coding section for beat generation"""
+    st.subheader("🎵 Strudel Live Coding")
+    
+    if st.session_state.current_project is None:
+        st.warning("⚠️ Please load a project first.")
+        return
+    
+    project = st.session_state.current_project
+    config = st.session_state.project_config
+    
+    # Check if analysis is complete
+    if "analysis" not in config:
+        st.warning("⚠️ Please complete the analysis first to generate Strudel patterns.")
+        return
+    
+    st.info("🎵 Generate live coding patterns from your audio analysis using Strudel!")
+    
+    # Generate Strudel patterns
+    if st.button("🎵 Generate Strudel Patterns", type="primary"):
+        try:
+            with st.spinner("Generating Strudel patterns from your analysis..."):
+                # Prepare analysis data
+                analysis_data = {
+                    'tempo': config.get('analysis', {}).get('tempo', 120),
+                    'drums': config.get('analysis', {}).get('drums', {}),
+                    'melody': config.get('analysis', {}).get('melody', {}),
+                    'chords': config.get('analysis', {}).get('chords', {})
+                }
+                
+                # Generate patterns
+                strudel_files = generate_strudel_from_analysis(
+                    analysis_data, 
+                    str(project.project_path / "strudel")
+                )
+                
+                st.success("✅ Strudel patterns generated successfully!")
+                
+                # Store in session state
+                st.session_state.strudel_files = strudel_files
+                
+        except Exception as e:
+            st.error(f"❌ Error generating Strudel patterns: {str(e)}")
+    
+    # Display generated patterns
+    if hasattr(st.session_state, 'strudel_files') and st.session_state.strudel_files:
+        st.subheader("📝 Generated Strudel Code")
+        
+        # Tabs for different pattern types
+        pattern_tabs = st.tabs(["🎵 Complete Pattern", "🥁 Drums", "🎹 Melody", "🎼 Chords", "🎯 Suggested Template", "🌐 Web Player"])
+        
+        with pattern_tabs[0]:
+            st.subheader("Complete Pattern")
+            if 'complete' in st.session_state.strudel_files:
+                with open(st.session_state.strudel_files['complete'], 'r') as f:
+                    complete_code = f.read()
+                
+                st.code(complete_code, language='javascript')
+                
+                if st.button("📋 Copy Complete Pattern"):
+                    st.code(complete_code, language='javascript')
+                    st.success("Pattern copied! Paste it into Strudel.cc")
+        
+        with pattern_tabs[1]:
+            st.subheader("Drum Pattern")
+            if 'drums' in st.session_state.strudel_files:
+                with open(st.session_state.strudel_files['drums'], 'r') as f:
+                    drum_code = f.read()
+                
+                st.code(drum_code, language='javascript')
+                
+                if st.button("📋 Copy Drum Pattern"):
+                    st.code(drum_code, language='javascript')
+                    st.success("Drum pattern copied!")
+        
+        with pattern_tabs[2]:
+            st.subheader("Melody Pattern")
+            if 'melody' in st.session_state.strudel_files:
+                with open(st.session_state.strudel_files['melody'], 'r') as f:
+                    melody_code = f.read()
+                
+                st.code(melody_code, language='javascript')
+                
+                if st.button("📋 Copy Melody Pattern"):
+                    st.code(melody_code, language='javascript')
+                    st.success("Melody pattern copied!")
+        
+        with pattern_tabs[3]:
+            st.subheader("Chord Pattern")
+            if 'chords' in st.session_state.strudel_files:
+                with open(st.session_state.strudel_files['chords'], 'r') as f:
+                    chord_code = f.read()
+                
+                st.code(chord_code, language='javascript')
+                
+                if st.button("📋 Copy Chord Pattern"):
+                    st.code(chord_code, language='javascript')
+                    st.success("Chord pattern copied!")
+        
+        with pattern_tabs[4]:
+            st.subheader("Suggested Template")
+            if 'template' in st.session_state.strudel_files:
+                with open(st.session_state.strudel_files['template'], 'r') as f:
+                    template_code = f.read()
+                
+                st.code(template_code, language='javascript')
+                
+                if st.button("📋 Copy Suggested Template"):
+                    st.code(template_code, language='javascript')
+                    st.success("Suggested template copied!")
+        
+        with pattern_tabs[5]:
+            st.subheader("Web Player")
+            if 'html' in st.session_state.strudel_files:
+                st.info("🌐 Open the HTML file in your browser to play the patterns!")
+                
+                with open(st.session_state.strudel_files['html'], 'rb') as f:
+                    html_content = f.read()
+                
+                st.download_button(
+                    label="📥 Download Web Player",
+                    data=html_content,
+                    file_name=f"{project.project_name}_strudel_player.html",
+                    mime="text/html"
+                )
+                
+                st.success("✅ Download the HTML file and open it in your browser to play!")
+    
+    # Strudel tutorial section
+    with st.expander("📚 How to Use Strudel"):
+        st.markdown("""
+        ### What is Strudel?
+        Strudel is a web-based live coding environment for creating music patterns. It's inspired by TidalCycles and allows you to code beats, melodies, and chord progressions.
+        
+        ### How to Use Generated Patterns:
+        1. **Copy the code** from any of the pattern tabs above
+        2. **Go to [strudel.cc](https://strudel.cc)** in your browser
+        3. **Paste the code** into the editor
+        4. **Press Ctrl+Enter** to play the pattern
+        5. **Edit the code** to modify the patterns
+        
+        ### Basic Strudel Commands:
+        - `d1 $ "bd sn bd sn"` - Play a drum pattern
+        - `d2 $ n "c4 d4 e4 f4"` - Play a melody
+        - `d3 $ chord "C Am F G"` - Play chord progression
+        - `hush` - Stop all sounds
+        - `setcpm 120` - Set tempo to 120 BPM
+        
+        ### Tips:
+        - Use `stack` to layer multiple patterns
+        - Use `cat` to sequence longer patterns
+        - Use `*` to repeat patterns (e.g., `"bd*4"`)
+        - Use `~` for silence/rests
+        """)
+    
+    # Template browser
+    with st.expander("🎨 Template Browser"):
+        st.subheader("Browse Style Templates")
+        
+        from src.strudel_templates import get_strudel_templates
+        templates = get_strudel_templates()
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            selected_style = st.selectbox(
+                "Choose a musical style:",
+                templates.get_all_styles(),
+                help="Select a musical style to browse templates"
+            )
+        
+        with col2:
+            if selected_style:
+                patterns = templates.get_patterns_for_style(selected_style)
+                selected_pattern = st.selectbox(
+                    "Choose a pattern:",
+                    patterns,
+                    help="Select a specific pattern within the style"
+                )
+        
+        if selected_style and selected_pattern:
+            template_code = templates.get_template(selected_style, selected_pattern)
+            
+            st.subheader(f"{selected_style.title()} - {selected_pattern.title()}")
+            st.code(template_code, language='javascript')
+            
+            if st.button("📋 Copy Template"):
+                st.code(template_code, language='javascript')
+                st.success("Template copied! Paste it into strudel.cc")
+            
+            if st.button("🎵 Use as Base Pattern"):
+                st.session_state.custom_template = template_code
+                st.success("Template loaded! You can now modify it in the Quick Pattern Editor below.")
+    
+    # Quick pattern editor
+    with st.expander("✏️ Quick Pattern Editor"):
+        st.subheader("Create Custom Patterns")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.write("**Drum Pattern:**")
+            drum_input = st.text_input(
+                "Drum pattern (e.g., 'bd sn bd sn')",
+                value="bd sn bd sn",
+                help="Use: bd=kick, sn=snare, hh=hihat, oh=open hat"
+            )
+            
+            st.write("**Melody Pattern:**")
+            melody_input = st.text_input(
+                "Melody pattern (e.g., 'c4 d4 e4 f4')",
+                value="c4 d4 e4 f4",
+                help="Use note names like c4, d4, e4, f4, g4, a4, b4"
+            )
+        
+        with col2:
+            st.write("**Chord Pattern:**")
+            chord_input = st.text_input(
+                "Chord pattern (e.g., 'C Am F G')",
+                value="C Am F G",
+                help="Use chord names like C, Am, F, G, Dm, Em"
+            )
+            
+            tempo_input = st.number_input(
+                "Tempo (BPM)",
+                min_value=60,
+                max_value=200,
+                value=120
+            )
+        
+        if st.button("🎵 Generate Custom Pattern"):
+            custom_pattern = f"""
+// Custom pattern generated in LTW Audio Splitter
+setcpm ({tempo_input * 4})
+
+d1 $ "{drum_input}"
+d2 $ n "{melody_input}" # s "piano"
+d3 $ chord "{chord_input}" # s "pad"
+
+hush
+d1
+d2
+d3
+"""
+            
+            st.code(custom_pattern, language='javascript')
+            st.success("✅ Custom pattern generated! Copy and paste into strudel.cc")
+
+
 def export_section():
     """Export section"""
     st.header("📤 Export")
@@ -705,10 +957,11 @@ def main():
         st.success(f"✅ Project loaded: {st.session_state.current_project.project_name}")
         
         # Main tabs
-        tab1, tab2, tab3, tab4, tab5 = st.tabs([
+        tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
             "🎛️ Stem Separation", 
             "📊 Analysis", 
             "🎼 Chords", 
+            "🎵 Strudel",
             "📤 Export",
             "ℹ️ About"
         ])
@@ -723,9 +976,12 @@ def main():
             chord_analysis_section()
         
         with tab4:
-            export_section()
+            strudel_section()
         
         with tab5:
+            export_section()
+        
+        with tab6:
             st.subheader("ℹ️ About Beat & Stems Lab")
             st.write("""
             **Beat & Stems Lab** is a local-only audio analysis and stem separation tool.
@@ -736,6 +992,7 @@ def main():
             - 🎹 **Melody Extraction**: Extract lead melodies to MIDI
             - 🥁 **Drum Analysis**: Detect and classify drum patterns
             - 🎼 **Chord Analysis**: Identify chord progressions and key
+            - 🎵 **Strudel Integration**: Generate live coding patterns from your analysis
             - 📤 **Export**: Export to various DAW formats
             
             ### Privacy:
