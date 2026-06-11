@@ -1,0 +1,11 @@
+# Copy to .streamlit/config.toml for local development.
+# Enables serving stem slice WAVs to the embedded Strudel player.
+#
+#   mkdir -p .streamlit
+#   cp .streamlit/config.toml.example .streamlit/config.toml
+
+[server]
+enableStaticServing = true
+
+[browser]
+gatherUsageStats = false

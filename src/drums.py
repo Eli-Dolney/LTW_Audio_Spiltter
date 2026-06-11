@@ -28,12 +28,15 @@ def detect_drum_onsets(audio: np.ndarray, sr: int = SAMPLE_RATE) -> Dict[str, an
     # Calculate onset strength
     onset_env = librosa.onset.onset_strength(y=audio, sr=sr, hop_length=HOP_LENGTH)
     
-    # Detect onset frames
+    # Detect onset frames (backtrack + lower delta for full-track coverage)
     onset_frames = librosa.onset.onset_detect(
         onset_envelope=onset_env,
         sr=sr,
         hop_length=HOP_LENGTH,
-        units='time'
+        units='time',
+        backtrack=True,
+        delta=0.07,
+        wait=2,
     )
     
     # Convert to times
@@ -51,9 +54,10 @@ def detect_drum_onsets(audio: np.ndarray, sr: int = SAMPLE_RATE) -> Dict[str, an
 
 
 def classify_drum_hits(
-    audio: np.ndarray, 
-    onset_times: List[float], 
-    sr: int = SAMPLE_RATE
+    audio: np.ndarray,
+    onset_times: List[float],
+    sr: int = SAMPLE_RATE,
+    onset_strengths: Optional[List[float]] = None,
 ) -> List[Dict[str, any]]:
     """
     Classify drum hits by type (kick, snare, hat, etc.)
@@ -67,8 +71,8 @@ def classify_drum_hits(
         List of classified drum hits
     """
     drum_hits = []
-    
-    for onset_time in onset_times:
+
+    for i, onset_time in enumerate(onset_times):
         # Get audio segment around onset
         start_sample = max(0, int((onset_time - 0.05) * sr))
         end_sample = min(len(audio), int((onset_time + 0.1) * sr))
@@ -81,11 +85,16 @@ def classify_drum_hits(
         # Analyze frequency content
         drum_type = classify_drum_segment(segment, sr)
         
+        strength = 1.0
+        if onset_strengths and i < len(onset_strengths):
+            strength = float(onset_strengths[i])
+
         drum_hits.append({
             "time": onset_time,
             "type": drum_type,
             "start_sample": start_sample,
-            "end_sample": end_sample
+            "end_sample": end_sample,
+            "strength": strength,
         })
     
     return drum_hits
@@ -131,12 +140,17 @@ def classify_drum_segment(segment: np.ndarray, sr: int) -> str:
     # Classify based on energy ratios
     if kick_ratio > DRUM_THRESH["kick_lowband"]:
         return "kick"
-    elif snare_ratio > DRUM_THRESH["snare_mid"]:
+    if snare_ratio > DRUM_THRESH["snare_mid"]:
         return "snare"
-    elif hat_ratio > DRUM_THRESH["hat_high"]:
+    if hat_ratio > DRUM_THRESH["hat_high"]:
         return "hat"
-    else:
-        return "unknown"
+
+    # Fallback: assign to strongest band instead of unknown
+    ratios = {"kick": kick_ratio, "snare": snare_ratio, "hat": hat_ratio}
+    best = max(ratios, key=ratios.get)
+    if ratios[best] > 0.25:
+        return best
+    return "snare"  # generic percussive fallback for Strudel
 
 
 def create_drum_midi(
@@ -155,22 +169,37 @@ def create_drum_midi(
     Returns:
         PrettyMIDI object
     """
+    # Ensure tempo is a scalar float
+    tempo_val = float(tempo)
+    if isinstance(tempo_val, np.ndarray):
+        tempo_val = float(tempo_val.item())
+        
+    print(f"DEBUG DRUMS: Creating MIDI with tempo {tempo_val} (type: {type(tempo_val)})")
+    
     # Create MIDI object
-    midi = pretty_midi.PrettyMIDI(initial_tempo=tempo)
+    midi = pretty_midi.PrettyMIDI(initial_tempo=tempo_val)
     
     # Create drum track (channel 9 for drums)
     drum_track = pretty_midi.Instrument(program=0, is_drum=True, name="Drums")
     
+    print(f"DEBUG DRUMS: Processing {len(drum_hits)} drum hits")
+    
     # Add drum notes
-    for hit in drum_hits:
+    for i, hit in enumerate(drum_hits):
         drum_type = hit["type"]
         
         if drum_type in DRUM_MAPPING:
+            start_val = float(hit["time"])
+            end_val = float(hit["time"]) + float(MIDI_DRUM_DURATION)
+            
+            if i == 0:
+                print(f"DEBUG DRUMS: Hit 0 start type: {type(start_val)}, value: {start_val}")
+            
             note = pretty_midi.Note(
-                velocity=MIDI_DRUM_VELOCITY,
-                pitch=DRUM_MAPPING[drum_type],
-                start=hit["time"],
-                end=hit["time"] + MIDI_DRUM_DURATION
+                velocity=int(MIDI_DRUM_VELOCITY),
+                pitch=int(DRUM_MAPPING[drum_type]),
+                start=start_val,
+                end=end_val
             )
             drum_track.notes.append(note)
     
@@ -346,19 +375,44 @@ def extract_drums_to_midi(
     onset_results = detect_drum_onsets(audio, sr)
     
     # Filter by confidence
-    onset_times = []
+    onset_times: List[float] = []
+    filtered_strengths: List[float] = []
     onset_strengths = onset_results["onset_strengths"]
-    
-    for i, strength in enumerate(onset_strengths):
-        if strength >= confidence_threshold:
-            onset_times.append(onset_results["onset_times"][i])
-    
+
+    strengths = onset_strengths
+    if len(strengths) > 0:
+        # Adaptive threshold: keep onsets above relative peak (works across full track)
+        peak = float(np.max(strengths))
+        adaptive = max(0.15, peak * confidence_threshold)
+        for i, strength in enumerate(strengths):
+            if float(strength) >= adaptive:
+                onset_times.append(onset_results["onset_times"][i])
+                filtered_strengths.append(float(strength))
+    else:
+        onset_times = list(onset_results["onset_times"])
+        filtered_strengths = [1.0] * len(onset_times)
+
     # Classify drum hits
-    drum_hits = classify_drum_hits(audio, onset_times, sr)
+    drum_hits = classify_drum_hits(
+        audio, onset_times, sr, onset_strengths=filtered_strengths
+    )
+
+    # Normalize strengths to 0.3–1.0 gain range for Strudel dynamics
+    if drum_hits:
+        max_strength = max(hit.get("strength", 1.0) for hit in drum_hits) or 1.0
+        for hit in drum_hits:
+            raw = hit.get("strength", 1.0)
+            hit["gain"] = round(0.3 + 0.7 * (raw / max_strength), 2)
     
     # Get tempo if not provided
     if tempo is None:
         tempo, _ = librosa.beat.beat_track(y=audio, sr=sr)
+        
+    # Ensure tempo is float
+    if isinstance(tempo, np.ndarray):
+        tempo = float(tempo.item())
+    else:
+        tempo = float(tempo)
     
     # Create MIDI file
     midi = create_drum_midi(drum_hits, tempo, output_path)

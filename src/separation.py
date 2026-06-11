@@ -32,6 +32,17 @@ from config import (
 from .io_utils import save_audio_file, get_stem_path
 
 
+def _get_demucs_device() -> str:
+    """Pick best available PyTorch device for Demucs."""
+    if not DEMUCS_AVAILABLE:
+        return "cpu"
+    if torch.cuda.is_available():
+        return "cuda"
+    if getattr(torch.backends, "mps", None) and torch.backends.mps.is_available():
+        return "mps"
+    return "cpu"
+
+
 class StemSeparator:
     """Handles audio stem separation using various methods"""
     
@@ -133,9 +144,15 @@ class StemSeparator:
         # Convert to torch tensor
         audio_tensor = torch.from_numpy(audio_stereo).unsqueeze(0)  # Add batch dimension
         
+        device = _get_demucs_device()
+
         # Perform separation
         with torch.no_grad():
-            separated = apply_model(self.demucs_model, audio_tensor, device='cpu')[0]
+            try:
+                separated = apply_model(self.demucs_model, audio_tensor, device=device)[0]
+            except Exception:
+                # MPS/CUDA may fail on some builds — fall back to CPU
+                separated = apply_model(self.demucs_model, audio_tensor, device='cpu')[0]
         
         # Convert back to numpy and process
         stems = {}
@@ -212,23 +229,29 @@ def separate_audio_file(
 
 
 def get_available_methods() -> Dict[str, str]:
-    """Get available separation methods with descriptions"""
+    """Get separation methods that are actually installed and usable.
+
+    Demucs is listed first so it becomes the default selection. Spleeter
+    methods are only included when Spleeter is importable, since it is not
+    installed by default (and is hard to install on Apple Silicon).
+    """
     methods = {}
-    
-    # Always include Spleeter methods
-    methods.update({
-        "spleeter:2stems": "Vocals + Other (Fast)",
-        "spleeter:4stems": "Vocals + Drums + Bass + Other",
-        "spleeter:5stems": "Vocals + Drums + Bass + Piano + Other"
-    })
-    
-    # Include Demucs if available
+
+    # Include Demucs first so it is the default option when available
     if DEMUCS_AVAILABLE:
         methods.update({
             "demucs:4stems": "Vocals + Drums + Bass + Other (High Quality)",
             "demucs:5stems": "Vocals + Drums + Bass + Piano + Other (High Quality)"
         })
-    
+
+    # Only offer Spleeter if it is actually installed
+    if SPLEETER_AVAILABLE:
+        methods.update({
+            "spleeter:2stems": "Vocals + Other (Fast)",
+            "spleeter:4stems": "Vocals + Drums + Bass + Other",
+            "spleeter:5stems": "Vocals + Drums + Bass + Piano + Other"
+        })
+
     return methods
 
 
@@ -262,6 +285,45 @@ def validate_separation_method(method: str) -> bool:
         return DEMUCS_AVAILABLE
     else:
         return False
+
+
+def extract_voice(audio: np.ndarray, sr: int) -> np.ndarray:
+    """
+    Isolate voice/speech from mixed audio using Demucs vocals stem.
+
+    Applies a light high-pass and normalization for cleaner speech output.
+    Background music and noise are discarded (not returned).
+    """
+    if not DEMUCS_AVAILABLE:
+        raise ImportError("Demucs not available. Install with: pip install demucs")
+
+    separator = StemSeparator("demucs:4stems")
+    stems = separator.separate_audio(audio, sr)
+    vocals = stems.get("vocals")
+    if vocals is None:
+        raise ValueError("Demucs did not produce a vocals stem")
+
+    try:
+        from scipy.signal import butter, sosfilt
+
+        sos = butter(2, 80, btype="high", fs=sr, output="sos")
+        vocals = sosfilt(sos, vocals.astype(np.float64))
+    except Exception:
+        pass
+
+    vocals = librosa.util.normalize(vocals.astype(np.float32))
+    return vocals
+
+
+def separate_voice_file(
+    audio_path: Path,
+    output_path: Path,
+) -> Path:
+    """Load audio, extract voice only, and save to output_path."""
+    audio, sr = librosa.load(str(audio_path), sr=SAMPLE_RATE, mono=True)
+    voice = extract_voice(audio, sr)
+    save_audio_file(voice, output_path, EXPORT_SAMPLE_RATE)
+    return output_path
 
 
 def get_separation_quality_info(method: str) -> Dict[str, str]:

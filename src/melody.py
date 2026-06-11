@@ -214,18 +214,26 @@ def create_midi_from_notes(
         PrettyMIDI object
     """
     # Create MIDI object
-    midi = pretty_midi.PrettyMIDI(initial_tempo=tempo)
+    midi = pretty_midi.PrettyMIDI(initial_tempo=float(tempo))
     
     # Create instrument
     instrument = pretty_midi.Instrument(program=0, name=track_name)  # Piano
     
     # Add notes
-    for note_data in notes:
+    for i, note_data in enumerate(notes):
+        start_val = float(note_data["start_time"])
+        end_val = float(note_data["end_time"])
+        
+        # Debug print for first note
+        if i == 0:
+            print(f"DEBUG: Note 0 start type: {type(start_val)}, value: {start_val}")
+            print(f"DEBUG: Note 0 end type: {type(end_val)}, value: {end_val}")
+            
         note = pretty_midi.Note(
-            velocity=note_data["velocity"],
-            pitch=note_data["pitch"],
-            start=note_data["start_time"],
-            end=note_data["end_time"]
+            velocity=int(note_data["velocity"]),
+            pitch=int(note_data["pitch"]),
+            start=start_val,
+            end=end_val
         )
         instrument.notes.append(note)
     

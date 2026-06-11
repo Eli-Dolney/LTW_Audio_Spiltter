@@ -23,7 +23,7 @@ DRUM_THRESH = {
 }
 
 # Stem separation defaults
-STEM_METHOD_DEFAULT = "spleeter:2stems"
+STEM_METHOD_DEFAULT = "demucs:4stems"
 STEM_METHODS = {
     "spleeter:2stems": "Vocals + Other",
     "spleeter:4stems": "Vocals + Drums + Bass + Other",
@@ -41,9 +41,10 @@ MIDI_DRUM_DURATION = 0.1  # seconds
 DRUM_MAPPING = {
     "kick": 35,
     "snare": 38,
+    "hat": 42,
     "closed_hat": 42,
     "open_hat": 46,
-    "crash": 49
+    "crash": 49,
 }
 
 # Frequency bands for drum detection
@@ -64,7 +65,7 @@ MIDI_DIR = "midi"
 ANALYSIS_DIR = "analysis"
 
 # Supported audio formats
-SUPPORTED_FORMATS = [".mp3", ".wav", ".flac", ".m4a", ".aac"]
+SUPPORTED_FORMATS = [".mp3", ".wav", ".flac", ".m4a", ".aac", ".mp4"]
 
 # Visualization settings
 WAVEFORM_HEIGHT = 300
@@ -81,8 +82,8 @@ CHUNK_SIZE = 30  # seconds for processing long files
 CACHE_ENABLED = True
 
 # App settings
-APP_TITLE = "Beat & Stems Lab"
-APP_VERSION = "1.0.0"
+APP_TITLE = "LTW Audio"
+APP_VERSION = "2.0.0"
 
 # Privacy settings
 OFFLINE_MODE = True

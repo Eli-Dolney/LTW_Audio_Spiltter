@@ -18,6 +18,54 @@ from config import (
 )
 
 
+# Keys allowed inline in project.ltw.json (heavy data lives in analysis/*.json)
+_ANALYSIS_SCALAR_KEYS = frozenset({
+    "tempo", "duration", "total_beats", "key_guess", "key_confidence",
+})
+
+
+def slim_project_config(config: Dict[str, Any]) -> Dict[str, Any]:
+    """Strip large embedded arrays/objects from config; keep paths and scalars only."""
+    if not config:
+        return config
+
+    slim = dict(config)
+    raw_analysis = config.get("analysis") or {}
+    slim_analysis: Dict[str, Any] = {}
+
+    for key, val in raw_analysis.items():
+        if key in _ANALYSIS_SCALAR_KEYS and isinstance(val, (int, float, str, bool)):
+            slim_analysis[key] = val
+        elif isinstance(val, str) and (val.endswith(".json") or "/" in val):
+            slim_analysis[key] = val
+
+    slim["analysis"] = slim_analysis
+    return slim
+
+
+def config_is_bloated(config: Dict[str, Any]) -> bool:
+    """True if config embeds large analysis payloads instead of file references."""
+    analysis = config.get("analysis") or {}
+    for key, val in analysis.items():
+        if key in _ANALYSIS_SCALAR_KEYS:
+            continue
+        if isinstance(val, list) and len(val) > 20:
+            return True
+        if isinstance(val, dict) and key not in ("tempo",):
+            return True
+    return False
+
+
+def merge_beat_summary(config: Dict[str, Any], beat_analysis: Dict[str, Any]) -> Dict[str, Any]:
+    """Store tempo/beat summary in config without embedding beat_times."""
+    if "analysis" not in config:
+        config["analysis"] = {}
+    for field in ("tempo", "duration", "total_beats"):
+        if field in beat_analysis:
+            config["analysis"][field] = beat_analysis[field]
+    return config
+
+
 class ProjectManager:
     """Manages project structure and file operations"""
     
@@ -42,6 +90,7 @@ class ProjectManager:
     
     def save_project_config(self, config: Dict[str, Any]):
         """Save project configuration to JSON file"""
+        config = slim_project_config(config)
         config["version"] = APP_VERSION
         config["project_name"] = self.project_name
         
@@ -55,7 +104,14 @@ class ProjectManager:
             return None
         
         with open(project_file, 'r') as f:
-            return json.load(f)
+            raw = json.load(f)
+
+        if config_is_bloated(raw):
+            slim = slim_project_config(raw)
+            self.save_project_config(slim)
+            return slim
+
+        return slim_project_config(raw)
 
 
 def calculate_audio_checksum(audio_path: Path) -> str:
@@ -120,26 +176,55 @@ def get_audio_duration(file_path: Path) -> float:
 
 
 def list_projects() -> list:
-    """List all available projects"""
+    """List projects using lightweight metadata (avoids loading multi-MB configs)."""
     if not PROJECTS_DIR.exists():
         return []
-    
+
     projects = []
-    for project_dir in PROJECTS_DIR.iterdir():
-        if project_dir.is_dir():
-            project_file = project_dir / "project.ltw.json"
-            if project_file.exists():
-                try:
-                    with open(project_file, 'r') as f:
-                        config = json.load(f)
-                    projects.append({
-                        "name": project_dir.name,
-                        "config": config
-                    })
-                except:
-                    continue
-    
+    for project_dir in sorted(PROJECTS_DIR.iterdir(), key=lambda p: p.name.lower()):
+        if not project_dir.is_dir():
+            continue
+        project_file = project_dir / "project.ltw.json"
+        if not project_file.exists():
+            continue
+
+        summary = _read_project_list_summary(project_dir.name, project_file)
+        projects.append({"name": project_dir.name, "config": summary})
+
     return projects
+
+
+def _read_project_list_summary(name: str, project_file: Path) -> Dict[str, Any]:
+    """Read only small metadata for the project picker UI."""
+    summary: Dict[str, Any] = {"audio": {}, "analysis": {}}
+    try:
+        size = project_file.stat().st_size
+        if size > 200_000:
+            # Bloated legacy config — read tempo/duration from analysis/tempo_beats.json if present
+            tempo_file = project_file.parent / ANALYSIS_DIR / "tempo_beats.json"
+            if tempo_file.exists():
+                with open(tempo_file, "r") as f:
+                    tb = json.load(f)
+                summary["analysis"]["tempo"] = tb.get("tempo")
+                summary["audio"]["duration"] = tb.get("duration")
+            return summary
+
+        with open(project_file, "r") as f:
+            config = json.load(f)
+        slim = slim_project_config(config)
+        summary["audio"] = {
+            k: slim.get("audio", {}).get(k)
+            for k in ("duration", "sr")
+            if slim.get("audio", {}).get(k) is not None
+        }
+        summary["analysis"] = {
+            k: slim.get("analysis", {}).get(k)
+            for k in ("tempo", "key_guess")
+            if slim.get("analysis", {}).get(k) is not None
+        }
+    except Exception:
+        pass
+    return summary
 
 
 def create_project_from_audio(audio_path: Path, project_name: str) -> ProjectManager:

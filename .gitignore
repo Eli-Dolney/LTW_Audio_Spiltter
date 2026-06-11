@@ -259,8 +259,20 @@ $RECYCLE.BIN/
 projects/
 *.ltw.json
 
-# Streamlit
-.streamlit/
+# Streamlit (local config — copy config.toml.example to config.toml)
+.streamlit/*
+!.streamlit/config.toml.example
+
+# Local dev docs, scripts, and generated caches (not for GitHub)
+GUIDE.md
+dev/
+.cursor/
+legacy/
+regenerate_strudel.py
+slim_projects.py
+check_env.py
+static/slices/
+!static/.gitkeep
 
 # Temporary files
 *.tmp

@@ -179,14 +179,23 @@ def create_multi_stem_comparison(
     
     colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd']
     
+    max_points = 4000
+
     for i, (stem_name, audio) in enumerate(stems.items()):
-        time = np.linspace(0, len(audio) / sr, len(audio))
+        duration = len(audio) / sr
+        if len(audio) > max_points:
+            step = max(1, len(audio) // max_points)
+            plot_y = audio[::step]
+            time = np.linspace(0, duration, len(plot_y))
+        else:
+            plot_y = audio
+            time = np.linspace(0, duration, len(plot_y))
         color = colors[i % len(colors)]
         
         fig.add_trace(
             go.Scatter(
                 x=time,
-                y=audio,
+                y=plot_y,
                 mode='lines',
                 name=stem_name,
                 line=dict(color=color, width=1),

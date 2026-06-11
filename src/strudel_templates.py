@@ -17,7 +17,84 @@ class StrudelTemplates:
             "ambient": self._get_ambient_templates(),
             "reggae": self._get_reggae_templates(),
             "funk": self._get_funk_templates(),
-            "minimal": self._get_minimal_templates()
+            "minimal": self._get_minimal_templates(),
+            "tiktok_viral": self._get_tiktok_viral_templates()
+        }
+    
+    def _get_tiktok_viral_templates(self) -> Dict[str, str]:
+        """Viral styles for TikToks/Edits"""
+        return {
+            "phonk": """
+// 🏎️ Drift Phonk (Aggressive)
+// 155 BPM
+setcpm(38.75);
+
+stack(
+  // Distorted 808s
+  s("bd(3,8) [~ bd]").bank("RolandTR808").clip(2).gain(1.5),
+  note("c1(3,8) [~ c1]").sound("sawtooth").lpf(300).gain(1.8),
+  
+  // Cowbell Melody (The Phonk Signature)
+  note("c3 ~ d#3 ~ g3 ~ c4 ~").sound("cowbell").gain(1.2).room(0.5),
+  
+  // Fast Memphis Hi-Hats
+  s("hh*8").bank("RolandTR808").speed("1 2").gain(0.8),
+  
+  // Dark Pad texture
+  chord("Cm").sound("sawtooth").lpf(800).room(2)
+)
+""",
+            "jersey_club": """
+// 💃 Jersey Club (Bounce)
+// 140 BPM
+setcpm(35);
+
+stack(
+  // The Jersey Kick Pattern (Triplet feel on the 4th beat)
+  // 1 . 2 . 3 . 4 . .
+  s("bd ~ bd ~ bd ~ [bd ~ bd] ~").bank("RolandTR909").gain(1.3),
+  
+  // Vocal Chop / Bed squeak sample (Simulated)
+  s("cp*4").bank("RolandTR808").speed("2").hpf(1000).gain(0.6),
+  
+  // Bouncy Synth
+  note("c3 ~ ~ g3 ~ ~ c4 ~").sound("square").lpf(1500).decay(0.1)
+)
+""",
+            "hyperpop": """
+// ⚡ Hyperpop / Glitchcore
+// 160 BPM
+setcpm(40);
+
+stack(
+  // Distorted, fast drums
+  s("bd*4").bank("RolandTR909").clip(1.5),
+  s("sd(3,8)").bank("RolandTR909").crush(4).gain(1.2),
+  
+  // Glitchy Arps
+  note("c4 e4 g4 b4").sound("sawtooth").speed("2").phaser(2),
+  
+  // Bubbling Bass
+  note("c2*8").sound("sawtooth").lpf(sine.range(200, 800).fast(8))
+)
+""",
+            "dnb": """
+// 🏃 Drum & Bass / Breakcore
+// 174 BPM
+setcpm(43.5);
+
+stack(
+  // The Amen Break Pattern
+  s("bd ~ ~ ~ sd ~ ~ bd ~ bd sd ~ ~ ~ ~ ~").bank("RolandTR909").speed(1.2),
+  s("hh*16").bank("RolandTR909").gain(0.5),
+  
+  // Reese Bass
+  note("f1").sound("sawtooth").detune(0.2).lpf(400).gain(1.5).sustain(4),
+  
+  // Atmospheric Pad
+  chord("Fm9").sound("sawtooth").lpf(2000).room(3).slow(4)
+)
+"""
         }
     
     def _get_hip_hop_templates(self) -> Dict[str, str]:
@@ -82,6 +159,42 @@ d1 $ "bd ~ ~ ~"
 d2 $ "~ ~ sn ~"
 d3 $ "hh*4"
 d4 $ "~ ~ ~ oh"
+""",
+            "trance": """
+// Spacey Trance Beat
+// 140 BPM
+setcpm(35);
+
+stack(
+  // Driving Kick & Bass
+  s("bd*4").bank("RolandTR909").gain(1.2),
+  note("e1*4").sound("sawtooth").lpf(400).gain(1.5),
+  
+  // Arpeggiated Lead
+  note("e3(3,8) a3(3,8) b3(3,8) e4(3,8)").sound("sawtooth").lpf(2000).delay(0.5).room(1.5).sustain(0.1),
+  
+  // Sweeping Pad
+  chord("EM7").sound("sawtooth").lpf(sine.range(500, 8000).slow(16)).room(3).sustain(4)
+)
+""",
+            "psytrance": """
+// Psytrance Gallop
+// 145 BPM
+setcpm(36.25);
+
+stack(
+  // Kick
+  s("bd*4").bank("RolandTR909").gain(1.5).clip(1.2),
+  
+  // The "Gallop" Bass (KBBK BBK)
+  note("~ f1 f1 ~ ~ f1 f1 ~").sound("sawtooth").lpf(600).lpq(5).gain(1.3),
+  
+  // Alien FX
+  s("bd(3,8)").speed("4 8 2").sound("square").hpf(2000).delay(0.25),
+  
+  // Acid Line
+  note("f2 f3 f2 c3").sound("sawtooth").lpf(sine.range(200, 3000).fast(4)).lpq(20).sustain(0.2)
+)
 """
         }
     

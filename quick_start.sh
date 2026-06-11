@@ -1,48 +1,37 @@
 #!/bin/bash
 
-# LTW Audio Splitter - Quick Start Script
-# This script activates the virtual environment and starts the application
+# LTW Audio - Quick Start Script
+echo "🎵 LTW Audio - Quick Start"
+echo "=========================="
 
-echo "🎵 LTW Audio Splitter - Quick Start"
-echo "==================================="
-
-# Check if we're in the right directory
 if [ ! -f "app.py" ]; then
-    echo "❌ Error: app.py not found. Please run this script from the project root directory."
+    echo "❌ Error: app.py not found. Run from project root."
     exit 1
 fi
 
-# Check if virtual environment exists
 if [ ! -d "venv" ]; then
-    echo "❌ Error: Virtual environment not found. Please run the setup first."
-    echo "Run: python -m venv venv && source venv/bin/activate && pip install -r requirements.txt"
+    echo "❌ Virtual environment not found."
+    echo "Run: ./setup.sh  OR  python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt"
     exit 1
 fi
 
-# Activate virtual environment
 echo "🔧 Activating virtual environment..."
 source venv/bin/activate
 
-# Check if required packages are installed
 echo "📦 Checking dependencies..."
-python -c "import streamlit, librosa, demucs" 2>/dev/null
+python -c "import streamlit, librosa, demucs, torch" 2>/dev/null
 if [ $? -ne 0 ]; then
-    echo "❌ Error: Required packages not found. Installing..."
+    echo "Installing requirements..."
     pip install -r requirements.txt
 fi
 
-# Run the test script
-echo "🧪 Running system tests..."
-python test_app.py
-if [ $? -ne 0 ]; then
-    echo "❌ System tests failed. Please check the installation."
-    exit 1
-fi
+echo "🛑 Stopping any old Streamlit instances..."
+pkill -f "streamlit run app.py" 2>/dev/null || true
+sleep 1
 
-# Start the application
-echo "🚀 Starting LTW Audio Splitter..."
-echo "📱 The application will open in your web browser at http://localhost:8501"
-echo "🛑 Press Ctrl+C to stop the application"
+echo "🚀 Starting LTW Audio at http://localhost:8501"
+echo "   (Use 8501 only — ignore 8502 if an old test server was left running)"
+echo "🛑 Press Ctrl+C to stop"
 echo ""
 
 streamlit run app.py
